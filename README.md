@@ -44,11 +44,13 @@ omarchy bar set io.github.5d0tal1gat0r.stocks tickerWidth 260
 omarchy bar set io.github.5d0tal1gat0r.stocks scrollSpeed 30
 omarchy bar set io.github.5d0tal1gat0r.stocks currency EUR
 omarchy bar set io.github.5d0tal1gat0r.stocks compact true --json    # "AAPL ▲0.42%" without the price
+omarchy bar set io.github.5d0tal1gat0r.stocks labels '{"0P0001NZPA.IR":"KRON"}' --json
 ```
 
 | key | default | meaning |
 |-----|---------|---------|
 | `symbols` | `["AAPL","NVDA","SPCX","GOOGL"]` | any Yahoo Finance symbols (stocks, ETFs, `BTC-USD`, `EURUSD=X`, `^GSPC`); a comma-separated string also works |
+| `labels` | `{}` | short names for the tape, keyed by symbol: `{"0P0001NZPA.IR":"KRON"}`. A `SYM=LABEL,...` string also works. Useful for mutual funds, which Yahoo only serves under Morningstar-ID symbols |
 | `refreshMinutes` | `5` | quote refresh interval (minimum 1) |
 | `tickerWidth` | `180` | tape width in px (minimum 80) |
 | `scrollSpeed` | `20` | tape speed in px/s; `0` = static |
@@ -59,6 +61,11 @@ omarchy bar set io.github.5d0tal1gat0r.stocks compact true --json    # "AAPL ▲
 | `upColor` / `downColor` | theme `green` / `red` | override the tints with a hex color, e.g. `"#a6e3a1"` |
 
 Unknown symbols show as `Not Found` in the panel and are left out of the tape.
+
+Mutual funds have no intraday series, so `1D` charts stay empty and `5D` is
+sparse; use `1M` or longer. Yahoo serves some funds only under a Morningstar-ID
+symbol (Kron Indeks Global is `0P0001NZPA.IR` in NOK) — pair those with a
+`labels` entry so the tape stays readable.
 Colors follow the current theme's `colors.toml`; themes without a `green` get a
 neutral fallback.
 

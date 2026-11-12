@@ -23,6 +23,8 @@ Panel {
   // ---- Settings (inline on this widget's shell.json entry).
   readonly property var symbols: Model.normalizeSymbols(setting("symbols", null))
   readonly property string symbolsKey: symbols.join(",")
+  // Optional {SYMBOL: "SHORT"} map for the tape; see Model.normalizeLabels.
+  readonly property var labels: Model.normalizeLabels(setting("labels", null))
   readonly property int refreshMinutes: Model.refreshMinutes(setting("refreshMinutes", 5))
   readonly property bool compact: setting("compact", false) === true || String(setting("compact", false)) === "true"
   readonly property string activeRange: Model.chartRange(setting("chartRange", "1d"))
@@ -57,20 +59,20 @@ Panel {
   readonly property int validCount: Model.validCount(quotes)
   // Quotes as displayed: converted into the display currency when a rate is known.
   readonly property var shownQuotes: Model.convertAll(quotes, displayCurrency, rates)
-  readonly property var tapeItems: Model.tapeItems(shownQuotes, compact)
+  readonly property var tapeItems: Model.tapeItems(shownQuotes, compact, labels)
   readonly property var selectedQuote: selectedIndex >= 0 && selectedIndex < shownQuotes.length ? shownQuotes[selectedIndex] : null
   readonly property bool hasSelection: Model.isValid(selectedQuote)
 
   // Fallback pill text while the tape has nothing to show: "AAPL …" while
   // loading, "AAPL !" when every symbol failed.
   readonly property string label: shownQuotes.length > 0
-    ? Model.barLabel(shownQuotes[0], compact)
-    : Model.loadingLabel(symbols.length ? symbols[0] : "")
+    ? Model.barLabel(shownQuotes[0], compact, labels)
+    : Model.loadingLabel(symbols.length ? symbols[0] : "", labels)
   readonly property string verticalText: {
     var first = Model.firstValidIndex(shownQuotes)
-    if (first >= 0) return Model.verticalLabel(shownQuotes[first])
-    if (shownQuotes.length > 0) return Model.verticalLabel(shownQuotes[0])
-    return (symbols.length ? symbols[0] : "") + "\n…"
+    if (first >= 0) return Model.verticalLabel(shownQuotes[first], labels)
+    if (shownQuotes.length > 0) return Model.verticalLabel(shownQuotes[0], labels)
+    return (symbols.length ? Model.displaySymbol(symbols[0], labels) : "") + "\n…"
   }
 
   // ---- Presentation helpers shared by every row.
@@ -594,7 +596,7 @@ Panel {
                 anchors.leftMargin: Style.space(8)
                 anchors.verticalCenter: parent.verticalCenter
                 width: Style.space(64)
-                text: row.modelData.symbol
+                text: Model.displaySymbol(row.modelData.symbol, root.labels)
                 elide: Text.ElideRight
                 color: row.valid ? root.barForeground : root.mutedForeground
                 font.family: root.fontFamily

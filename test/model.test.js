@@ -24,6 +24,22 @@ test("normalizeSymbols: returns a copy, never the shared default array", () => {
   assert.deepEqual(Model.normalizeSymbols(null), Model.DEFAULT_SYMBOLS)
 })
 
+test("normalizeLabels: object and SYM=LABEL string forms, keys upper-cased", () => {
+  assert.deepEqual(Model.normalizeLabels({ "0p0001nzpa.ir": " KRON ", aapl: "  " }), { "0P0001NZPA.IR": "KRON" })
+  assert.deepEqual(Model.normalizeLabels("0P0001NZPA.IR=KRON, aapl = APPLE"), { "0P0001NZPA.IR": "KRON", AAPL: "APPLE" })
+  assert.deepEqual(Model.normalizeLabels("junk;=X"), {})
+  assert.deepEqual(Model.normalizeLabels(null), {})
+  assert.deepEqual(Model.normalizeLabels(42), {})
+})
+
+test("displaySymbol: the configured label wins, otherwise the symbol is untouched", () => {
+  const labels = Model.normalizeLabels({ "0P0001NZPA.IR": "KRON" })
+  assert.equal(Model.displaySymbol("0P0001NZPA.IR", labels), "KRON")
+  assert.equal(Model.displaySymbol("aapl", labels), "aapl")
+  assert.equal(Model.displaySymbol("AAPL"), "AAPL")
+  assert.equal(Model.displaySymbol(null, labels), "")
+})
+
 test("refreshMinutes: clamps to >= 1, non-numeric falls back", () => {
   assert.equal(Model.refreshMinutes(15), 15)
   assert.equal(Model.refreshMinutes("3"), 3)
@@ -103,6 +119,17 @@ test("parseChartResponse: missing optional fields become null, name falls back t
   assert.equal(q.change, null)
   assert.equal(q.changePct, null)
   assert.equal(q.dayLow, null)
+})
+
+test("parseChartResponse: a fund whose shortName repeats the symbol uses longName", () => {
+  const line = JSON.stringify({ chart: { result: [{ meta: {
+    symbol: "0P0001NZPA.IR", shortName: "0P0001NZPA.IR", longName: "Kron Indeks Global",
+    currency: "NOK", regularMarketPrice: 181.22, chartPreviousClose: 179.48
+  } }] } })
+  const q = Model.parseChartResponse(line)
+  assert.equal(q.symbol, "0P0001NZPA.IR")
+  assert.equal(q.name, "Kron Indeks Global")
+  assert.equal(q.currency, "NOK")
 })
 
 test("parseChartResponse: error, empty and garbage lines", () => {
@@ -210,6 +237,19 @@ test("barLabel: full, compact, error, no-change", () => {
   assert.equal(Model.barLabel(quote("X", 5, null), false), "X 5.00")
   assert.equal(Model.barLabel(quote("NOPE", null, null, "Not Found"), false), "NOPE !")
   assert.equal(Model.barLabel(null, false), "")
+})
+
+test("barLabel / verticalLabel / loadingLabel / tapeItems: labels replace the symbol", () => {
+  const labels = Model.normalizeLabels({ "0P0001NZPA.IR": "KRON" })
+  const fund = quote("0P0001NZPA.IR", 181.22, 179.48)
+  assert.equal(Model.barLabel(fund, false, labels), "KRON 181.22 ▲0.97%")
+  assert.equal(Model.verticalLabel(fund, labels), "KRON\n▲")
+  assert.equal(Model.loadingLabel("0P0001NZPA.IR", labels), "KRON …")
+  assert.deepEqual(Model.tapeItems([fund], false, labels), [
+    { symbol: "0P0001NZPA.IR", text: "KRON 181.22 ▲0.97%", up: true, down: false }
+  ])
+  // No labels: unchanged behaviour.
+  assert.equal(Model.barLabel(fund, false), "0P0001NZPA.IR 181.22 ▲0.97%")
 })
 
 test("verticalLabel / loadingLabel", () => {

@@ -32,6 +32,44 @@ function normalizeSymbols(value, fallback) {
   return out.length ? out : defaults.slice()
 }
 
+// Optional tape labels: {"0P0001NZPA.IR": "KRON"} keeps Morningstar-ID fund
+// symbols (and other long tickers) readable in the tape. Keys match symbols
+// case-insensitively; a "SYM=LABEL,SYM=LABEL" string also works (what
+// `omarchy bar set ... labels KRON=0P0001NZPA.IR` stores without --json).
+function addLabel(target, symbol, label) {
+  var key = trimString(symbol).toUpperCase()
+  var text = trimString(label)
+  if (key === "" || text === "") return
+  target[key] = text
+}
+
+function normalizeLabels(value) {
+  var out = {}
+  if (!value) return out
+  if (typeof value === "string") {
+    var pairs = value.split(/[,;]+/)
+    for (var i = 0; i < pairs.length; i++) {
+      var eq = pairs[i].indexOf("=")
+      if (eq === -1) continue
+      addLabel(out, pairs[i].slice(0, eq), pairs[i].slice(eq + 1))
+    }
+    return out
+  }
+  if (typeof value === "object") {
+    for (var key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) addLabel(out, key, value[key])
+    }
+  }
+  return out
+}
+
+// Symbol as shown in the tape: the configured label, else the symbol itself.
+function displaySymbol(symbol, labels) {
+  var raw = trimString(symbol)
+  var label = labels ? labels[raw.toUpperCase()] : ""
+  return label ? String(label) : raw
+}
+
 function refreshMinutes(value, fallback) {
   var d = fallback === undefined || fallback === null ? 5 : fallback
   var n = parseInt(String(value), 10)
@@ -190,7 +228,12 @@ function parseChartResponse(line) {
   var changePct = change !== null && prev ? (change / prev) * 100 : null
 
   var quote = emptyQuote(meta.symbol, price === null ? "No data" : "")
-  quote.name = trimString(meta.shortName || meta.longName || meta.symbol)
+  // Yahoo repeats the symbol in shortName for mutual funds (a Morningstar-ID
+  // symbol such as 0P0001NZPA.IR), which would leave no human-readable name;
+  // longName carries the fund's real name in that case.
+  var shortName = trimString(meta.shortName)
+  if (shortName.toUpperCase() === quote.symbol.toUpperCase()) shortName = ""
+  quote.name = shortName || trimString(meta.longName) || quote.symbol
   quote.currency = String(meta.currency || "")
   quote.exchange = String(meta.fullExchangeName || meta.exchangeName || "")
   quote.price = price
@@ -337,9 +380,10 @@ function formatChange(quote) {
 }
 
 // Bar pill text: "AAPL 305.59 ▲0.42%", or "AAPL ▲0.42%" when compact.
-function barLabel(quote, compact) {
+// `labels` (optional) swaps the symbol for a configured display label.
+function barLabel(quote, compact, labels) {
   if (!quote) return ""
-  var symbol = String(quote.symbol || "")
+  var symbol = displaySymbol(quote.symbol, labels)
   if (!isValid(quote)) return symbol + " !"
   var parts = [symbol]
   if (!compact) parts.push(formatPrice(quote.price))
@@ -350,16 +394,16 @@ function barLabel(quote, compact) {
 }
 
 // Vertical bars are only ~28px wide: symbol on one line, direction on the next.
-function verticalLabel(quote) {
+function verticalLabel(quote, labels) {
   if (!quote) return ""
-  var symbol = String(quote.symbol || "")
+  var symbol = displaySymbol(quote.symbol, labels)
   if (!isValid(quote)) return symbol + "\n!"
   var change = toNumber(quote.change)
   return symbol + "\n" + (change === null ? "•" : arrowFor(change))
 }
 
-function loadingLabel(symbol) {
-  var s = trimString(symbol)
+function loadingLabel(symbol, labels) {
+  var s = displaySymbol(symbol, labels)
   return (s ? s + " " : "") + "…"
 }
 
@@ -420,14 +464,14 @@ function valueToY(value, bounds, height, padding) {
 
 // ---- Ticker tape.
 
-function tapeItems(quotes, compact) {
+function tapeItems(quotes, compact, labels) {
   var list = quotes || []
   var out = []
   for (var i = 0; i < list.length; i++) {
     if (!isValid(list[i])) continue
     out.push({
       symbol: String(list[i].symbol || ""),
-      text: barLabel(list[i], compact),
+      text: barLabel(list[i], compact, labels),
       up: isUp(list[i]),
       down: isDown(list[i])
     })
@@ -604,6 +648,8 @@ if (typeof module !== "undefined") {
   module.exports = {
     DEFAULT_SYMBOLS: DEFAULT_SYMBOLS,
     normalizeSymbols: normalizeSymbols,
+    normalizeLabels: normalizeLabels,
+    displaySymbol: displaySymbol,
     refreshMinutes: refreshMinutes,
     cycleSeconds: cycleSeconds,
     chartUrl: chartUrl,
