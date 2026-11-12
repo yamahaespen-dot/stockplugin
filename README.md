@@ -7,10 +7,15 @@ and a currency switch. Quotes and FX rates come from Yahoo Finance — no API ke
 
 ![preview](preview.png)
 
+This repository is a fork of
+[5d0tal1gat0r/omarchy-stocks](https://github.com/5d0tal1gat0r/omarchy-stocks)
+that adds a `labels` setting (short names for the tape) and a `longName`
+fallback so Yahoo's Morningstar-ID fund symbols still show a readable name.
+
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/5d0tal1gat0r/omarchy-stocks.git --enable
+omarchy plugin add https://github.com/yamahaespen-dot/stockplugin.git --enable
 ```
 
 The widget lands in the bar's center section. Move it with:
