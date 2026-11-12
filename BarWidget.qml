@@ -73,6 +73,12 @@ BarWidget {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
+  // The bar sizes its open-panel mark at 55% of the slot by default, which
+  // reads as a stray dash under a label this wide. The ticker pill *is* the
+  // label, so let the mark span all of it.
+  readonly property real openPanelIndicatorWidth: Math.round(button.implicitWidth)
+  readonly property real openPanelIndicatorHeight: Math.round(button.implicitHeight)
+
   onBarChanged: injectPanel()
   onSettingsChanged: injectPanel()
 
