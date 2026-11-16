@@ -889,7 +889,7 @@ Panel {
           rightPadding: Style.space(8)
           text: root.fetchError !== ""
             ? "Could not update: " + root.fetchError
-            : "Click a row for details · Middle-click the tape to refresh · Right-click to pause"
+            : "Click a row for details · Middle-click the icon to refresh"
           wrapMode: Text.WordWrap
           color: root.fetchError !== "" ? root.urgentForeground : root.mutedForeground
           font.family: root.fontFamily

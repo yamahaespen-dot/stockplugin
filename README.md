@@ -1,16 +1,16 @@
 # Stocks for Omarchy
 
-A Wall-Street-style ticker tape for the Omarchy Quattro bar. The tape scrolls
-your symbols (`AAPL 305.59 ▲0.42%  •  NVDA …`) in the theme's green/red; click
-it for a panel with sparklines, a detail chart with range selector, key stats
-and a currency switch. Quotes and FX rates come from Yahoo Finance — no API key.
+A chart icon in the Omarchy Quattro bar that opens a quotes panel: sparklines
+per symbol, a detail chart with range selector, key stats and a currency
+switch. Quotes and FX rates come from Yahoo Finance — no API key.
 
 ![preview](preview.png)
 
 This repository is a fork of
 [5d0tal1gat0r/omarchy-stocks](https://github.com/5d0tal1gat0r/omarchy-stocks)
-that adds a `labels` setting (short names for the tape) and a `longName`
-fallback so Yahoo's Morningstar-ID fund symbols still show a readable name.
+that replaces the scrolling ticker tape with the icon, and adds a `labels`
+setting plus a `longName` fallback so Yahoo's Morningstar-ID fund symbols still
+show a readable name.
 
 ## Install
 
@@ -28,15 +28,14 @@ omarchy bar move io.github.5d0tal1gat0r.stocks --section right
 
 | where | action | effect |
 |-------|--------|--------|
-| tape | left click | open / close the panel (Esc closes, Tab switches panels) |
-| tape | middle click | refresh now |
-| tape | right click / hover | pause the tape (hover pauses while pointing) |
+| icon | left click | open / close the panel (Esc closes, Tab switches panels) |
+| icon | middle click | refresh now |
 | panel | `1D 5D 1M 6M 1Y` | chart range (persisted) |
 | panel | `USD ⇄` chip | left click: next currency · right click: previous · `Native` = each quote in its own currency |
 | panel | click a row | show that symbol's chart and stats |
 | panel | `Open on Yahoo Finance ↗` | open the selected symbol in your browser |
 
-IPC (for keybindings): `omarchy-shell io.github.5d0tal1gat0r.stocks toggle|open|close|refresh|pause`
+IPC (for keybindings): `omarchy-shell io.github.5d0tal1gat0r.stocks toggle|open|close|refresh`
 
 ## Configure
 
@@ -45,32 +44,26 @@ instantly:
 
 ```sh
 omarchy bar set io.github.5d0tal1gat0r.stocks symbols '["AAPL","MSFT","BTC-USD","^GSPC"]' --json
-omarchy bar set io.github.5d0tal1gat0r.stocks tickerWidth 260
-omarchy bar set io.github.5d0tal1gat0r.stocks scrollSpeed 30
 omarchy bar set io.github.5d0tal1gat0r.stocks currency EUR
-omarchy bar set io.github.5d0tal1gat0r.stocks compact true --json    # "AAPL ▲0.42%" without the price
 omarchy bar set io.github.5d0tal1gat0r.stocks labels '{"0P0001NZPA.IR":"KRON"}' --json
 ```
 
 | key | default | meaning |
 |-----|---------|---------|
 | `symbols` | `["AAPL","NVDA","SPCX","GOOGL"]` | any Yahoo Finance symbols (stocks, ETFs, `BTC-USD`, `EURUSD=X`, `^GSPC`); a comma-separated string also works |
-| `labels` | `{}` | short names for the tape, keyed by symbol: `{"0P0001NZPA.IR":"KRON"}`. A `SYM=LABEL,...` string also works. Useful for mutual funds, which Yahoo only serves under Morningstar-ID symbols |
+| `labels` | `{}` | short names for the panel rows and labels, keyed by symbol: `{"0P0001NZPA.IR":"KRON"}`. A `SYM=LABEL,...` string also works. Useful for mutual funds, which Yahoo only serves under Morningstar-ID symbols |
 | `refreshMinutes` | `5` | quote refresh interval (minimum 1) |
-| `tickerWidth` | `180` | tape width in px (minimum 80) |
-| `scrollSpeed` | `20` | tape speed in px/s; `0` = static |
-| `compact` | `false` | drop the price from the tape |
 | `chartRange` | `1d` | one of `1d 5d 1mo 6mo 1y` (the panel chips set this) |
 | `currency` | `""` (native) | show every price in this currency, e.g. `EUR` (the panel chip sets this) |
 | `currencies` | `["USD","EUR","GBP","JPY","CHF"]` | what the currency chip cycles through |
-| `upColor` / `downColor` | theme `green` / `red` | override the tints with a hex color, e.g. `"#a6e3a1"` |
+| `upColor` / `downColor` | theme `green` / `red` | the tints used for gains and losses, e.g. `"#a6e3a1"` |
 
-Unknown symbols show as `Not Found` in the panel and are left out of the tape.
+Unknown symbols show as `Not Found` in the panel.
 
 Mutual funds have no intraday series, so `1D` charts stay empty and `5D` is
 sparse; use `1M` or longer. Yahoo serves some funds only under a Morningstar-ID
 symbol (Kron Indeks Global is `0P0001NZPA.IR` in NOK) — pair those with a
-`labels` entry so the tape stays readable.
+`labels` entry so the panel stays readable.
 Colors follow the current theme's `colors.toml`; themes without a `green` get a
 neutral fallback.
 
@@ -80,7 +73,7 @@ Clone this repository (or your fork), then from its root:
 
 ```sh
 node --test test/model.test.js                              # Model.js unit tests
-qmllint -I /usr/share/omarchy/shell Panel.qml
+qmllint -I /usr/share/omarchy/shell Panel.qml BarWidget.qml
 omarchy plugin validate "$PWD"
 omarchy plugin add "$PWD" --enable                          # installs a clone into ~/.config/omarchy/plugins/
 rsync -a --delete --exclude .git ./ ~/.config/omarchy/plugins/io.github.5d0tal1gat0r.stocks/
